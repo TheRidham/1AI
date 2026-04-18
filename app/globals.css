@@ -128,3 +128,91 @@
     @apply font-sans;
   }
 }
+
+@layer components {
+  .container {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+}
+
+/* Custom Utility Classes from Original Design */
+@layer utilities {
+  .glass {
+    @apply bg-background/60 backdrop-blur-xl border border-border/50 shadow-sm;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/50;
+  }
+  
+  .text-iridescent {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-pulse;
+  }
+  
+  .bg-gradient-primary {
+    @apply bg-gradient-to-br from-primary to-primary/80;
+  }
+  
+  .bg-gradient-card {
+    @apply bg-gradient-to-b from-card to-card/50;
+  }
+  
+  .border-gradient {
+    @apply border border-border/50 relative;
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 20px -5px var(--primary);
+  }
+  
+  .shadow-card {
+    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .grid-bg {
+    background-size: 40px 40px;
+    background-image: linear-gradient(to right, var(--border) 1px, transparent 1px),
+                      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    mask-image: linear-gradient(to bottom, transparent, black, transparent);
+  }
+
+  /* Custom Animations */
+  .animate-fade-up {
+    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 1s ease-out forwards;
+    opacity: 0;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulseGlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Keyframes for animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.2; transform: scale(1) translateX(-50%); }
+  50% { opacity: 0.4; transform: scale(1.05) translateX(-50%); }
+}
