@@ -58,8 +58,8 @@ export default function SignupPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 size-140 rounded-full bg-primary/20 blur-[120px] animate-pulse-glow pointer-events-none"></div>
       <div className="absolute -bottom-20 right-0 size-90 rounded-full bg-accent/20 blur-[110px] pointer-events-none"></div>
 
-      <div className="container relative py-10 sm:py-14 lg:py-20">
-        <div className="flex items-center justify-between mb-10">
+      <div className="container relative py-8 sm:py-12 lg:py-16">
+        <div className="flex items-center justify-between mb-8">
           <Link href="/" className="glass rounded-full px-4 h-11 inline-flex items-center gap-2 hover:border-primary/40 transition-colors">
             <div className="size-7 rounded-md bg-gradient-primary grid place-items-center shadow-glow">
               <Sparkles className="size-4 text-primary-foreground" strokeWidth={2.5} />
