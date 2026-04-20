@@ -34,15 +34,25 @@ export interface ChatMessage {
 
 export interface Expert {
   id: string;
+  userId: string;
   name: string;
+  email: string;
   avatar: string;
   title: string;
+  bio: string;
   domains: string[];
+  skills: string[];
+  experience: string;
+  hourlyRate: number;
   rating: number;
   reviews: number;
-  hourlyRate: string;
-  experience: string;
-  skills: string[];
-  bio: string;
   available: boolean;
+  responseTime: string;
+  completedProjects: number;
+  socialLinks?: {
+    linkedin?: string;
+    github?: string;
+    portfolio?: string;
+  };
+  createdAt?: Date | string;
 }
