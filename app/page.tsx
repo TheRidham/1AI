@@ -1,11 +1,10 @@
-import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { HeroPromptBox } from "@/components/home/HeroPromptBox";
 import {
   Sparkles,
   ArrowUpRight,
-  Mic,
   ArrowRight,
   Check,
   Boxes,
@@ -25,8 +24,21 @@ import {
   ChartLine,
   Building2,
 } from "lucide-react";
+import { auth } from "@/lib/firebase";
+  import { HeaderAuthLink } from "@/components/home/HeaderAuthLink";
+
+const DEFAULT_PROMPT =
+  "Onboarding new engineers takes 6 weeks because our codebase has zero documentation — solve it.";
+
+const PROMPT_SUGGESTIONS = [
+  "Cut support handling time by 70%",
+  "Automate contract review at scale",
+  "Build a RAG pipeline on our docs",
+  "Predict and prevent customer churn",
+];
 
 export default function Home() {
+
   return (
     <main className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* Header */}
@@ -45,7 +57,7 @@ export default function Home() {
             <a href="#docs" className="px-4 h-9 inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-secondary/60">Docs</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/login" className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-foreground px-3 h-10 items-center">Sign in</Link>
+            <HeaderAuthLink />
             <Button asChild className="bg-gradient-primary hover:opacity-90 transition-opacity rounded-full shadow-glow text-primary-foreground font-medium px-5 h-10">
               <Link href="/signup">Get Started</Link>
             </Button>
@@ -74,32 +86,10 @@ export default function Home() {
               Tell 1AIBase a real business problem. Get the exact combination of AI tools, models and specialists that can solve it — and govern adoption, compliance and cost in one place.
             </p>
             
-            <div className="animate-fade-up [animation-delay:240ms] mt-10 relative">
-              <div className="border-gradient rounded-2xl glass shadow-card overflow-hidden">
-                <div className="flex items-start gap-3 p-4">
-                  <Sparkles className="size-5 text-primary shrink-0 ml-2 mt-1.5" />
-                  <div className="flex-1 text-left min-h-14 py-1 flex items-start text-foreground/90 text-base md:text-lg">
-                    <span className="leading-relaxed">
-                      Onboarding new engineers takes 6 weeks because our codebase has zero documentation — solve it.
-                      <span className="inline-block w-0.5 h-5 bg-primary ml-0.5 align-middle animate-pulse"></span>
-                    </span>
-                  </div>
-                  <button className="size-10 rounded-full hover:bg-secondary grid place-items-center text-muted-foreground hover:text-foreground transition-colors shrink-0">
-                    <Mic className="size-5" />
-                  </button>
-                  <Button className="bg-gradient-primary hover:opacity-90 rounded-xl h-10 px-4 text-primary-foreground font-medium shrink-0">
-                    Solve <ArrowRight className="size-4 ml-2" />
-                  </Button>
-                </div>
-              </div>
-              <div className="flex flex-wrap justify-center gap-2 mt-5">
-                {["Cut support handling time by 70%", "Automate contract review at scale", "Build a RAG pipeline on our docs", "Predict and prevent customer churn"].map((btnText, i) => (
-                  <button key={i} className="text-xs md:text-sm glass rounded-full px-3.5 py-1.5 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
-                    {btnText}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <HeroPromptBox
+              defaultPrompt={DEFAULT_PROMPT}
+              suggestions={PROMPT_SUGGESTIONS}
+            />
 
             <div className="animate-fade-up [animation-delay:360ms] mt-16">
               <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground/70">Trusted by product, design & AI teams at</p>

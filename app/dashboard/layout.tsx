@@ -98,10 +98,10 @@ export default function DashboardLayout({
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <p className="text-sm font-medium truncate max-w-[100px]">
+              <p className="text-sm font-medium truncate max-w-25">
                 {user.displayName || "User"}
               </p>
-              <p className="text-muted-foreground text-xs truncate max-w-[100px]">
+              <p className="text-muted-foreground text-xs truncate max-w-25">
                 {user.email}
               </p>
             </div>

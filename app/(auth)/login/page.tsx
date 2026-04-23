@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn, signInWithGoogle, signInWithGithub } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -9,19 +10,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, GitBranch, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { readPendingPrompt } from "@/lib/prompt-handoff";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const nextPath = (() => {
+    const next = searchParams.get("next");
+    if (!next) return "/dashboard";
+
+    try {
+      const decoded = decodeURIComponent(next);
+      return decoded.startsWith("/") ? decoded : "/dashboard";
+    } catch {
+      return "/dashboard";
+    }
+  })();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
       await signIn(email, password);
-      router.push("/dashboard");
+      router.push(readPendingPrompt() ? "/dashboard/chat" : nextPath);
     } catch {
       toast.error("failed", { description: "Check your credentials." });
     } finally {
@@ -32,7 +47,7 @@ export default function LoginPage() {
   async function handleGoogle() {
     try {
       await signInWithGoogle();
-      router.push("/dashboard");
+      router.push(readPendingPrompt() ? "/dashboard/chat" : nextPath);
     } catch {
       toast.error("failed", { description: "Google sign-in failed" });
     }
@@ -41,7 +56,7 @@ export default function LoginPage() {
   async function handleGithub() {
     try {
       await signInWithGithub();
-      router.push("/dashboard");
+      router.push(readPendingPrompt() ? "/dashboard/chat" : nextPath);
     } catch {
       toast.error("failed", { description: "GitHub sign-in failed" });
     }

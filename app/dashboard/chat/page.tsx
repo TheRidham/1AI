@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ChatMessage, AISolution } from "@/types";
 import { Send, BrainCircuit, Lightbulb, Users, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { clearPendingPrompt, readPendingPrompt } from "@/lib/prompt-handoff";
 
 const STREAM_PHASES = [
   { label: "Analyzing your problem", icon: "🔍" },
@@ -87,11 +88,7 @@ export default function ChatPage() {
   const [streamPhase, setStreamPhase] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streaming]);
-
+  const autoSentRef = useRef(false);
   const startPhaseTimer = useCallback(() => {
     let phase = 0;
     setStreamPhase(0);
@@ -195,6 +192,21 @@ export default function ChatPage() {
     },
     [streaming, messages, startPhaseTimer]
   );
+  
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, streaming]);
+
+  useEffect(() => {
+    const pendingPrompt = readPendingPrompt();
+    if (!pendingPrompt || autoSentRef.current || !user) return;
+
+    autoSentRef.current = true;
+    setInput(pendingPrompt);
+    clearPendingPrompt();
+    void send(pendingPrompt);
+  }, [user, send]);
+
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -340,7 +352,7 @@ export default function ChatPage() {
                 ? "Generating your solution..."
                 : "Describe your problem or project idea..."
             }
-            className="resize-none bg-background/60 border-border/50 focus:border-primary min-h-[52px] max-h-[150px] disabled:opacity-50 text-sm"
+            className="resize-none bg-background/60 border-border/50 focus:border-primary min-h-13 max-h-37.5 disabled:opacity-50 text-sm"
             rows={1}
           />
           {streaming ? (
