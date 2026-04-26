@@ -25,13 +25,13 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Zap className="size-4 text-primary" />
-            <span className="text-primary text-xs font-medium uppercase tracking-[0.1em]">AI-Powered</span>
+            <span className="text-primary text-xs font-medium uppercase tracking-widest">AI-Powered</span>
           </div>
           <h2 className="font-display text-xl font-semibold tracking-tight mb-1">
-            Describe your problem
+            Ask anything or describe a problem
           </h2>
           <p className="text-muted-foreground text-sm">
-            Get an instant solution with tools, workflow, and expert matches.
+            Get a direct answer or a structured solution workflow, plus expert matches.
           </p>
         </div>
         <Link href="/dashboard/chat" className="shrink-0">

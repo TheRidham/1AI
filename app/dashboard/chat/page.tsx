@@ -6,9 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SolutionCard } from "@/components/chat/SolutionCard";
 import { useAuth } from "@/context/AuthContext";
-import { ChatMessage, AISolution } from "@/types";
+import { AIResponse, ChatMessage } from "@/types";
 import { Send, BrainCircuit, Lightbulb, Users, Sparkles } from "lucide-react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { clearPendingPrompt, readPendingPrompt } from "@/lib/prompt-handoff";
 
 const STREAM_PHASES = [
@@ -75,6 +77,52 @@ function StreamingIndicator({ progress, phase }: { progress: number; phase: numb
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function parseAIResponse(raw: string): AIResponse | undefined {
+  try {
+    const parsed = JSON.parse(raw) as AIResponse;
+
+    if (parsed.kind === "solution" && parsed.solution) return parsed;
+    if (parsed.kind === "answer" && parsed.answer) return parsed;
+
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function AssistantMarkdown({ content }: { content: string }) {
+  return (
+    <div className="text-sm leading-relaxed text-foreground/85">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-1">{children}</ol>,
+          li: ({ children }) => <li>{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+          code: ({ children, className }) => {
+            const isBlock = Boolean(className && className.includes("language-"));
+
+            if (isBlock) {
+              return <code className="block overflow-x-auto rounded-md bg-secondary px-3 py-2 text-xs">{children}</code>;
+            }
+
+            return <code className="rounded bg-secondary px-1.5 py-0.5 text-xs">{children}</code>;
+          },
+          a: ({ children, href }) => (
+            <a href={href} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2">
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }
@@ -152,20 +200,20 @@ export default function ChatPage() {
         setStreamPhase(STREAM_PHASES.length - 1);
         await new Promise((r) => setTimeout(r, 400));
 
-        let solution: AISolution | undefined;
-        try {
-          solution = JSON.parse(accumulated);
-        } catch {
-          console.error("JSON parse failed:", accumulated);
-        }
+        const response = parseAIResponse(accumulated);
 
         const aiMsg: ChatMessage = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: solution
-            ? "Here's your AI-generated solution:"
-            : "I couldn't generate a structured solution. Please try rephrasing.",
-          solution,
+          content:
+            response?.kind === "solution"
+              ? "Here’s your AI-generated solution:"
+              : response?.kind === "answer"
+              ? response.answer
+              : "I couldn’t understand the request clearly. Please try rephrasing.",
+          kind: response?.kind,
+          solution: response?.kind === "solution" ? response.solution : undefined,
+          answer: response?.kind === "answer" ? response.answer : undefined,
           timestamp: new Date(),
         };
         setMessages((prev) => [...prev, aiMsg]);
@@ -229,10 +277,10 @@ export default function ChatPage() {
         <div>
           <h1 className="font-display font-semibold flex items-center gap-2">
             <Sparkles className="size-4 text-primary" />
-            AI Problem Solver
+            AI Assistant
           </h1>
           <p className="text-muted-foreground text-xs mt-0.5">
-            Powered by GPT-4o · Streaming responses
+            Powered by GPT-4o · Answers or workflows, depending on your prompt
           </p>
         </div>
         <Link href="/dashboard/experts">
@@ -259,8 +307,8 @@ export default function ChatPage() {
               What are you building?
             </h2>
             <p className="text-muted-foreground text-sm mb-8 max-w-sm leading-relaxed">
-              Describe your project in plain English. I'll analyze it and stream back tools,
-              workflow, and expert insights — live.
+              Ask a question or describe a project. I’ll either answer directly or turn your
+              problem into a workflow with tools and expert insights.
             </p>
             <div className="grid grid-cols-2 gap-3 max-w-lg w-full">
               {SUGGESTIONS.map((s) => (
@@ -310,12 +358,18 @@ export default function ChatPage() {
                 </div>
               ) : (
                 <div className="w-full">
-                  <p className="text-muted-foreground text-sm mb-2">{msg.content}</p>
                   {msg.solution ? (
-                    <SolutionCard solution={msg.solution} />
+                    <>
+                      <p className="text-muted-foreground text-sm mb-2">{msg.content}</p>
+                      <SolutionCard solution={msg.solution} />
+                    </>
+                  ) : msg.answer ? (
+                    <div className="glass border-gradient rounded-2xl px-4 py-3 text-sm text-foreground/80">
+                      <AssistantMarkdown content={msg.answer} />
+                    </div>
                   ) : (
                     <div className="glass border-gradient rounded-2xl px-4 py-3 text-sm text-foreground/70">
-                      {msg.content}
+                      <AssistantMarkdown content={msg.content} />
                     </div>
                   )}
                 </div>

@@ -9,6 +9,16 @@ export interface AISolution {
   insights: string;
 }
 
+export type AIResponse =
+  | {
+      kind: "solution";
+      solution: AISolution;
+    }
+  | {
+      kind: "answer";
+      answer: string;
+    };
+
 export interface Tool {
   name: string;
   description: string;
@@ -29,6 +39,8 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   solution?: AISolution;
+  answer?: string;
+  kind?: AIResponse["kind"];
   timestamp: Date;
 }
 
