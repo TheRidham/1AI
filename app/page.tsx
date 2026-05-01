@@ -79,8 +79,8 @@ export default function Home() {
               <ArrowUpRight className="size-3.5" />
             </a>
             <h1 className="animate-fade-up font-display text-5xl md:text-7xl font-semibold tracking-tight mt-6 leading-[1.05]">
-              <span className="text-gradient">Describe the problem.</span><br />
-              <span className="text-iridescent">One search box, Every AI answer your team needs.</span>
+              <span className="text-gradient">One search box, </span><br />
+              <span className="text-iridescent">Every AI answer your team needs.</span>
             </h1>
             <p className="animate-fade-up [animation-delay:120ms] mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Tell us a real business problem. Get the exact combination of AI tools, models and talent that can solve it, and govern adoption, compliance, seats, renewals and cost in one place.
