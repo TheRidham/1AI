@@ -80,10 +80,10 @@ export default function Home() {
             </a>
             <h1 className="animate-fade-up font-display text-5xl md:text-7xl font-semibold tracking-tight mt-6 leading-[1.05]">
               <span className="text-gradient">Describe the problem.</span><br />
-              <span className="text-iridescent">We'll architect the AI solution.</span>
+              <span className="text-iridescent">One search box, Every AI answer your team needs.</span>
             </h1>
             <p className="animate-fade-up [animation-delay:120ms] mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Tell 1AIBase a real business problem. Get the exact combination of AI tools, models and specialists that can solve it — and govern adoption, compliance and cost in one place.
+              Tell us a real business problem. Get the exact combination of AI tools, models and talent that can solve it, and govern adoption, compliance, seats, renewals and cost in one place.
             </p>
             
             <HeroPromptBox
