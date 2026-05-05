@@ -14,7 +14,11 @@ import {
   LayoutDashboard,
   LogOut,
   FolderKanban,
+  Plus,
+  Trash2,
 } from "lucide-react";
+import { ChatHistoryProvider, useChatHistory } from "@/context/ChatHistoryContext";
+import { ChatSession } from "@/lib/chatHistory";
 
 const NAV = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -23,7 +27,91 @@ const NAV = [
   { href: "/dashboard/projects", icon: FolderKanban, label: "Projects" },
 ];
 
+function ChatHistorySection() {
+  const { currentChatId, allChats, loadChat, deleteChat } = useChatHistory();
+  const router = useRouter();
+
+  const handleNewChat = () => {
+    router.push("/dashboard/chat");
+  };
+
+  const handleLoadChat = (chatId: string) => {
+    loadChat(chatId);
+    router.push(`/dashboard/chat/${chatId}`);
+  };
+
+  const handleDeleteChat = async (e: React.MouseEvent, chatId: string) => {
+    e.stopPropagation();
+    await deleteChat(chatId);
+  };
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0 mt-4">
+      <div className="flex items-center justify-between px-3 mb-2">
+        <h3 className="text-xs font-semibold text-muted-foreground tracking-wider">
+          Recent Chats
+        </h3>
+        <Button
+          onClick={handleNewChat}
+          variant="ghost"
+          size="icon"
+          className="size-6 shrink-0 text-muted-foreground hover:text-foreground"
+          title="New chat"
+        >
+          <Plus className="size-3.5" />
+        </Button>
+      </div>
+      <div className="space-y-1 flex-1 overflow-y-auto">
+        {allChats.length === 0 ? (
+          <p className="text-xs text-muted-foreground px-3 py-2">No chats yet</p>
+        ) : (
+          allChats.map((chat: ChatSession) => (
+            <div
+              key={chat.id}
+              className={`group flex items-start gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                chat.id === currentChatId
+                  ? "bg-primary/10 border border-primary/30"
+                  : "hover:bg-secondary/40"
+              }`}
+              onClick={() => handleLoadChat(chat.id)}
+            >
+              <MessageSquare className="size-3 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-foreground truncate">
+                  {chat.title}
+                </p>
+                <p className="text-[10px] text-muted-foreground/60">
+                  {new Date(chat.updatedAt).toLocaleDateString()}
+                </p>
+              </div>
+              <button
+                onClick={(e) => handleDeleteChat(e, chat.id)}
+                className="size-5 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                title="Delete chat"
+              >
+                <Trash2 className="size-3" />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <ChatHistoryProvider>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </ChatHistoryProvider>
+  );
+}
+
+function DashboardLayoutInner({
   children,
 }: {
   children: React.ReactNode;
@@ -56,11 +144,11 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-background text-foreground flex">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-border/50 flex flex-col p-4 shrink-0 bg-background/80 backdrop-blur-xl">
+      <aside className="sticky top-0 h-screen w-80 border-r border-border/50 flex flex-col p-4 shrink-0 bg-background/80 backdrop-blur-xl">
         {/* Logo */}
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 px-2 py-3 mb-6 group"
+          className="flex items-center gap-2 px-2 py-3 mb-2 group"
         >
           <div className="size-7 rounded-md bg-gradient-primary grid place-items-center shadow-glow">
             <Sparkles className="size-4 text-primary-foreground" strokeWidth={2.5} />
@@ -69,7 +157,7 @@ export default function DashboardLayout({
         </Link>
 
         {/* Nav */}
-        <nav className="flex-1 space-y-1">
+        <nav className="space-y-1">
           {NAV.map(({ href, icon: Icon, label }) => {
             const active = pathname === href;
             return (
@@ -89,8 +177,13 @@ export default function DashboardLayout({
           })}
         </nav>
 
+        {/* Chat History */}
+        <div className="flex-1 min-h-0 flex flex-col">
+          <ChatHistorySection />
+        </div>
+
         {/* User Footer */}
-        <div className="border-t border-border/50 pt-4 flex items-center justify-between">
+        <div className="mt-auto pt-3 border-t border-border/50 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <Avatar className="size-8 shrink-0">
               <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xs font-semibold">

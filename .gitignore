@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+localDummy
+EXPERT_RECOMMENDATION_SYSTEM.md

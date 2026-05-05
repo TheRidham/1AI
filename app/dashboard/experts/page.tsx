@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Expert } from "@/types";
 import { getAllExperts } from "@/lib/experts";
 import { ExpertCard } from "@/components/experts/ExpertCard";
@@ -46,7 +47,9 @@ const SKILLS = [
 ];
 
 export default function ExpertsPage() {
+  const searchParams = useSearchParams();
   const [experts, setExperts] = useState<Expert[]>([]);
+  const [recommendedMap, setRecommendedMap] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,6 +79,31 @@ export default function ExpertsPage() {
 
     fetchExperts();
   }, []);
+
+  // Read recommended experts from sessionStorage (set by chat flow)
+  useEffect(() => {
+    const recommendedFor = searchParams.get("recommendedFor");
+    if (recommendedFor !== "ai") {
+      setRecommendedMap(null);
+      return;
+    }
+
+    const chatId = searchParams.get("chatId") || "adhoc";
+    const recommendationStorageKey = `recommendedExperts:${chatId}`;
+
+    try {
+      const raw = sessionStorage.getItem(recommendationStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Array<any>;
+      const map: Record<string, any> = {};
+      parsed.forEach((r) => {
+        if (r && r.expert && r.expert.id) map[r.expert.id] = r;
+      });
+      setRecommendedMap(map);
+    } catch (e) {
+      // ignore parse errors
+    }
+  }, [searchParams]);
 
   // Filter and search experts
   const filteredExperts = useMemo(() => {
@@ -123,8 +151,17 @@ export default function ExpertsPage() {
       result = result.filter((expert) => expert.hourlyRate <= parseInt(maxRate));
     }
 
-    // Sort by rating (highest first)
-    result.sort((a, b) => b.rating - a.rating);
+    // Sort: by recommendation ranking if in recommendation mode, else by rating
+    const recommendedFor = searchParams.get("recommendedFor");
+    if (recommendedFor === "ai" && recommendedMap) {
+      result.sort((a, b) => {
+        const scoreA = recommendedMap[a.id]?.rankingScore || 0;
+        const scoreB = recommendedMap[b.id]?.rankingScore || 0;
+        return scoreB - scoreA;
+      });
+    } else {
+      result.sort((a, b) => b.rating - a.rating);
+    }
 
     return result;
   }, [
@@ -135,6 +172,8 @@ export default function ExpertsPage() {
     showAvailable,
     minRating,
     maxRate,
+    searchParams,
+    recommendedMap,
   ]);
 
   const handleClearFilters = () => {
@@ -331,7 +370,11 @@ export default function ExpertsPage() {
       {filteredExperts.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
           {filteredExperts.map((expert) => (
-            <ExpertCard key={expert.id} expert={expert} />
+            <ExpertCard
+              key={expert.id}
+              expert={expert}
+              match={recommendedMap ? recommendedMap[expert.id] : undefined}
+            />
           ))}
         </div>
       ) : (

@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SolutionCard } from "@/components/chat/SolutionCard";
 import { useAuth } from "@/context/AuthContext";
+import { useChatHistory } from "../../../context/ChatHistoryContext";
 import { AIResponse, ChatMessage } from "@/types";
 import { Send, BrainCircuit, Lightbulb, Users, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { clearPendingPrompt, readPendingPrompt } from "@/lib/prompt-handoff";
@@ -127,13 +128,16 @@ function AssistantMarkdown({ content }: { content: string }) {
   );
 }
 
-export default function ChatPage() {
+function ChatPageInner() {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const router = useRouter();
+  const { currentChatId, messages, addMessage, setCurrentChatIdOnly } = useChatHistory();
+
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [streamProgress, setStreamProgress] = useState(0);
   const [streamPhase, setStreamPhase] = useState(0);
+  const [recommending, setRecommending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const autoSentRef = useRef(false);
@@ -152,13 +156,22 @@ export default function ChatPage() {
     async (text: string) => {
       if (!text.trim() || streaming) return;
 
+      // Lazy chat creation: Create chat on first message if it doesn't exist yet
+      let activeChatId = currentChatId;
+      if (!activeChatId && user) {
+        activeChatId = Date.now().toString();
+        setCurrentChatIdOnly(activeChatId);
+        // Navigate to the new chat route (non-blocking)
+        router.push(`/dashboard/chat/${activeChatId}`);
+      }
+
       const userMsg: ChatMessage = {
         id: Date.now().toString(),
         role: "user",
         content: text,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, userMsg]);
+      addMessage(userMsg);
       setInput("");
       setStreaming(true);
       setStreamProgress(5);
@@ -167,7 +180,7 @@ export default function ChatPage() {
       abortRef.current = new AbortController();
 
       try {
-        const history = messages.map((m) => ({ role: m.role, content: m.content }));
+        const history = messages.map((m: ChatMessage) => ({ role: m.role, content: m.content }));
         const res = await fetch("/api/solve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -216,19 +229,16 @@ export default function ChatPage() {
           answer: response?.kind === "answer" ? response.answer : undefined,
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, aiMsg]);
+        addMessage(aiMsg);
       } catch (err: any) {
         if (err.name !== "AbortError") {
           clearInterval(phaseInterval);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: (Date.now() + 1).toString(),
-              role: "assistant",
-              content: "Something went wrong while generating your solution. Please try again.",
-              timestamp: new Date(),
-            },
-          ]);
+          addMessage({
+            id: (Date.now() + 1).toString(),
+            role: "assistant",
+            content: "Something went wrong while generating your solution. Please try again.",
+            timestamp: new Date(),
+          });
         }
       } finally {
         clearInterval(phaseInterval);
@@ -238,8 +248,45 @@ export default function ChatPage() {
         abortRef.current = null;
       }
     },
-    [streaming, messages, startPhaseTimer]
+    [streaming, messages, startPhaseTimer, currentChatId, user, addMessage, setCurrentChatIdOnly]
   );
+  
+  const handleFindExperts = useCallback(async () => {
+    // find most recent assistant solution
+    const solutionMsg = [...messages].reverse().find((m) => m.role === "assistant" && m.solution);
+    if (!solutionMsg) {
+      router.push("/dashboard/experts");
+      return;
+    }
+
+    const recommendationChatId = currentChatId || "adhoc";
+    const recommendationStorageKey = `recommendedExperts:${recommendationChatId}`;
+
+    try {
+      setRecommending(true);
+      if(!sessionStorage.getItem(recommendationStorageKey)) {
+        const res = await fetch("/api/recommend-experts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ workflow: solutionMsg.solution }),
+        });
+
+        if (!res.ok) throw new Error("Recommendation API failed");
+        const data = await res.json();
+        // store results in session storage for experts page to consume
+        try {
+          sessionStorage.setItem(recommendationStorageKey, JSON.stringify(data));
+        } catch {}
+      }
+
+      router.push(`/dashboard/experts?recommendedFor=ai&chatId=${encodeURIComponent(recommendationChatId)}`);
+    } catch (err) {
+      console.error(err);
+      router.push("/dashboard/experts");
+    } finally {
+      setRecommending(false);
+    }
+  }, [messages, router, currentChatId]);
   
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -271,7 +318,7 @@ export default function ChatPage() {
     .slice(0, 2);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen w-full">
       {/* Header */}
       <div className="border-b border-border/50 px-6 py-4 flex items-center justify-between shrink-0 bg-background/60 backdrop-blur-xl">
         <div>
@@ -283,16 +330,18 @@ export default function ChatPage() {
             Powered by GPT-4o · Answers or workflows, depending on your prompt
           </p>
         </div>
-        <Link href="/dashboard/experts">
+        <div className="flex items-center gap-2">
           <Button
+            onClick={handleFindExperts}
+            disabled={recommending}
             variant="outline"
             size="sm"
             className="gap-2 hover:bg-secondary"
           >
             <Users className="size-4" />
-            Find Experts
+            {recommending ? "Finding..." : "Find Experts"}
           </Button>
-        </Link>
+        </div>
       </div>
 
       {/* Messages */}
@@ -326,7 +375,7 @@ export default function ChatPage() {
         )}
 
         {/* Messages */}
-        {messages.map((msg) => (
+        {messages.map((msg: ChatMessage) => (
           <div
             key={msg.id}
             className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
@@ -436,3 +485,9 @@ export default function ChatPage() {
     </div>
   );
 }
+
+export default function ChatPage() {
+  return <ChatPageInner />;
+}
+
+export { ChatPageInner };

@@ -10,9 +10,15 @@ import Link from "next/link";
 
 interface ExpertCardProps {
   expert: Expert;
+  match?: {
+    finalScore?: number;
+    rankingScore?: number;
+    confidence?: number;
+    breakdown?: Record<string, number>;
+  } | null;
 }
 
-export function ExpertCard({ expert }: ExpertCardProps) {
+export function ExpertCard({ expert, match }: ExpertCardProps) {
   const initials = expert.name
     .split(" ")
     .map((n) => n[0])
@@ -47,7 +53,17 @@ export function ExpertCard({ expert }: ExpertCardProps) {
           <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
             {expert.title}
           </p>
-          <div className="mt-2">{statusIndicator}</div>
+          <div className="flex items-center gap-3 mt-2">
+            {statusIndicator}
+            {match && match.finalScore !== undefined && (
+              <div className="ml-auto text-right">
+                <div className="text-sm font-semibold text-primary">
+                  {Math.round((match.finalScore || 0) * 100)}% match
+                </div>
+                <div className="text-xs text-muted-foreground">Conf: {Math.round((match.confidence || 0) * 100)}%</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
